@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>求人票ジェネレーター</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #17171d;
+    --card: #1e1e26;
+    --border: #2a2a36;
+    --accent: #4f6ef7;
+    --accent2: #e8c547;
+    --text: #e8e6f0;
+    --muted: #6b6880;
+    --success: #3dd68c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(79,110,247,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 100%, rgba(232,197,71,0.05) 0%, transparent 50%);
+  }
+
+  header {
+    padding: 40px 24px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), #7b93f9);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  h1 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: clamp(20px, 5vw, 28px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  .container {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 28px 16px 80px;
+  }
+
+  /* API Key */
+  .api-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .api-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .api-bar input {
+    flex: 1;
+    min-width: 180px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+  }
+  .api-bar input::placeholder { color: var(--muted); }
+
+  /* Section */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 18px;
+    margin-bottom: 14px;
+    animation: fadeIn 0.3s ease both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 500px) { .grid2 { grid-template-columns: 1fr; } }
+  .full { grid-column: 1 / -1; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  input[type="text"], input[type="number"], textarea, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); font-size: 13px; }
+  textarea { resize: vertical; min-height: 75px; line-height: 1.6; }
+  select option { background: var(--card); }
+
+  /* 掲載先セレクター */
+  .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 400px) { .platform-grid { grid-template-columns: 1fr; } }
+
+  .platform-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .platform-btn:hover { border-color: var(--accent); }
+  .platform-btn.active {
+    border-color: var(--accent);
+    background: rgba(79,110,247,0.12);
+  }
+  .platform-icon { font-size: 18px; }
+  .platform-info { flex: 1; }
+  .platform-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .platform-desc {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .platform-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    transition: all 0.2s;
+  }
+  .platform-btn.active .platform-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* 生成ボタン */
+  .generate-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), #7b93f9);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 15px;
+    font-family: 'Shippori Mincho', serif;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-top: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .generate-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+  }
+  .generate-btn:hover::before { left: 100%; }
+  .generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(79,110,247,0.35);
+  }
+  .generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ローディング */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+  }
+  .loading.show { display: block; }
+  .dots {
+    display: inline-flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; background: #7b93f9; }
+  .dot:nth-child(3) { animation-delay: 0.4s; background: var(--accent2); }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* 結果 */
+  .result-section { display: none; }
+  .result-section.show {
+    display: block;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .result-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 16px;
+    color: var(--accent2);
+  }
+  .platform-tag {
+    background: rgba(79,110,247,0.15);
+    border: 1px solid rgba(79,110,247,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .result-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    flex: 1;
+    min-width: 100px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .action-btn.primary {
+    background: rgba(79,110,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* エラー */
+  .error-box {
+    display: none;
+    background: rgba(255,80,80,0.08);
+    border: 1px solid rgba(255,80,80,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #ff6b6b;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .error-box.show { display: block; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 48px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📋</div>
+    <h1>求人票ジェネレーター</h1>
+  </div>
+  <p class="subtitle">掲載先に最適化された求人票をAIが自動生成</p>
+</header>
+
+<div class="container">
+
+  <!-- API Key -->
+  <div class="api-bar">
+    <span class="api-label">API KEY</span>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-..." />
+  </div>
+
+  <!-- 掲載先 -->
+  <div class="section">
+    <div class="section-title">掲載先を選択</div>
+    <div class="platform-grid" id="platformGrid">
+      <button class="platform-btn active" data-platform="indeed" onclick="selectPlatform(this)">
+        <span class="platform-icon">🔍</span>
+        <div class="platform-info">
+          <div class="platform-name">Indeed</div>
+          <div class="platform-desc">キーワード重視・簡潔な文体</div>
+        </div>
+        <div class="platform-check">✓</div>
+      </button>
+      <button class="platform-btn" data-platform="wantedly" onclick="selectPlatform(this)">
+        <span class="platform-icon">💼</span>
+        <div class="platform-info">
+          <div class="platform-name">Wantedly</div>
+          <div class="platform-desc">ビジョン・カルチャー重視</div>
+        </div>
+        <div class="platform-check">✓</div>
+      </button>
+      <button class="platform-btn" data-platform="hellowork" onclick="selectPlatform(this)">
+        <span class="platform-icon">🏢</span>
+        <div class="platform-info">
+          <div class="platform-name">ハローワーク</div>
+          <div class="platform-desc">公式フォーマット・硬い文体</div>
+        </div>
+        <div class="platform-check">✓</div>
+      </button>
+      <button class="platform-btn" data-platform="own" onclick="selectPlatform(this)">
+        <span class="platform-icon">🌐</span>
+        <div class="platform-info">
+          <div class="platform-name">自社サイト</div>
+          <div class="platform-desc">自由度高め・個性を出す</div>
+        </div>
+        <div class="platform-check">✓</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- 基本情報 -->
+  <div class="section">
+    <div class="section-title">募集基本情報</div>
+    <div class="grid2">
+      <div class="field">
+        <label>職種名 *</label>
+        <input type="text" id="jobTitle" placeholder="Webエンジニア" />
+      </div>
+      <div class="field">
+        <label>雇用形態</label>
+        <select id="employmentType">
+          <option value="正社員">正社員</option>
+          <option value="契約社員">契約社員</option>
+          <option value="業務委託">業務委託</option>
+          <option value="アルバイト・パート">アルバイト・パート</option>
+          <option value="インターン">インターン</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>給与（下限）万円</label>
+        <input type="number" id="salaryMin" placeholder="400" />
+      </div>
+      <div class="field">
+        <label>給与（上限）万円</label>
+        <input type="number" id="salaryMax" placeholder="600" />
+      </div>
+      <div class="field">
+        <label>勤務地</label>
+        <input type="text" id="location" placeholder="東京都渋谷区（リモート可）" />
+      </div>
+      <div class="field">
+        <label>リモート</label>
+        <select id="remote">
+          <option value="応相談">応相談</option>
+          <option value="フルリモート可">フルリモート可</option>
+          <option value="一部リモート可">一部リモート可</option>
+          <option value="出社必須">出社必須</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 仕事内容 -->
+  <div class="section">
+    <div class="section-title">仕事内容・求める人物像</div>
+    <div class="grid2">
+      <div class="field full">
+        <label>仕事内容・業務詳細 *</label>
+        <textarea id="jobDesc" placeholder="例：自社ECサイトのバックエンド開発、新機能の設計・実装、コードレビュー"></textarea>
+      </div>
+      <div class="field">
+        <label>必須スキル・経験</label>
+        <textarea id="mustSkills" placeholder="例：Python経験3年以上、REST API設計経験" style="min-height:65px;"></textarea>
+      </div>
+      <div class="field">
+        <label>歓迎スキル・経験</label>
+        <textarea id="niceSkills" placeholder="例：AWS経験、チームリーダー経験" style="min-height:65px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 会社・待遇 -->
+  <div class="section">
+    <div class="section-title">会社・待遇情報</div>
+    <div class="grid2">
+      <div class="field">
+        <label>会社名・チーム名</label>
+        <input type="text" id="company" placeholder="株式会社〇〇" />
+      </div>
+      <div class="field">
+        <label>業種・事業内容</label>
+        <input type="text" id="industry" placeholder="SaaS / BtoB向けSaaS開発" />
+      </div>
+      <div class="field full">
+        <label>会社の魅力・特徴</label>
+        <textarea id="companyPR" placeholder="例：創業5年で急成長中、エンジニアが意思決定に参加できる文化、フルフレックス制度あり"></textarea>
+      </div>
+      <div class="field full">
+        <label>福利厚生・待遇</label>
+        <textarea id="benefits" placeholder="例：各種社会保険完備、書籍購入補助、勉強会参加支援" style="min-height:65px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <button class="generate-btn" id="generateBtn" onclick="generate()">
+    ✦ 求人票を生成する
+  </button>
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- ローディング -->
+  <div class="loading" id="loading">
+    <div class="dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <p>AIが最適な求人票を作成中...</p>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-section" id="resultSection">
+    <div class="result-header">
+      <span class="result-title">生成された求人票</span>
+      <span class="platform-tag" id="platformTag"></span>
+    </div>
+    <div class="result-box" id="resultBox"></div>
+    <div class="result-actions">
+      <button class="action-btn" onclick="copyText()">📋 コピー</button>
+      <button class="action-btn" onclick="downloadText()">💾 保存</button>
+      <button class="action-btn primary" onclick="regenerate()">🔄 再生成</button>
+    </div>
+  </div>
+
+  <footer>Powered by Claude API · Anthropic</footer>
+</div>
+
+<script>
+  let selectedPlatform = 'indeed';
+  let lastResult = '';
+
+  const platformNames = {
+    indeed: 'Indeed最適化',
+    wantedly: 'Wantedly最適化',
+    hellowork: 'ハローワーク最適化',
+    own: '自社サイト最適化'
+  };
+
+  const platformPrompts = {
+    indeed: `【Indeedに最適化された求人票を作成してください】
+- 求職者が検索するキーワードを自然に盛り込む
+- 給与・待遇・勤務条件を冒頭に明記する
+- 箇条書きを多用してスキャンしやすくする
+- 端的でわかりやすい文体
+- 構成：【職種名】【仕事内容】【必須条件】【歓迎条件】【給与・待遇】【勤務地・時間】【会社について】`,
+
+    wantedly: `【Wantedlyに最適化された求人票を作成してください】
+- 給与より「なぜこの会社か」「どんなビジョンか」を前面に出す
+- 共感・熱量を感じるストーリー調の文体
+- エンジニアやクリエイターが「ここで働きたい」と思える内容
+- 構成：【キャッチコピー】【私たちのミッション】【仕事内容】【こんな方を求めています】【私たちの特徴・文化】【チームについて】`,
+
+    hellowork: `【ハローワークに最適化された求人票を作成してください】
+- 公的機関向けの丁寧で正確な文体
+- 法定記載事項を漏れなく含める
+- 事実を淡々と正確に記載する硬い文体
+- 構成：【求人種別】【職種】【仕事の内容】【雇用形態】【就業場所】【就業時間】【賃金】【加入保険】【必要な経験等】【求める人材】【会社の特長】`,
+
+    own: `【自社採用サイト向けの求人票を作成してください】
+- 会社のブランドや個性を最大限に表現する
+- 長文・読み物スタイルでもOK
+- 求職者の「共感」と「興味」を引き出す文章
+- 構成：【魅力的なキャッチコピー】【この仕事で実現できること】【具体的な業務内容】【求める人物像】【チーム・職場環境】【待遇・福利厚生】【メッセージ】`
+  };
+
+  function selectPlatform(btn) {
+    document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPlatform = btn.dataset.platform;
+  }
+
+  async function generate() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const jobTitle = document.getElementById('jobTitle').value.trim();
+    const jobDesc = document.getElementById('jobDesc').value.trim();
+
+    const errorBox = document.getElementById('errorBox');
+    errorBox.className = 'error-box';
+
+    if (!apiKey) {
+      errorBox.textContent = '⚠️ APIキーを入力してください。';
+      errorBox.className = 'error-box show';
+      return;
+    }
+    if (!jobTitle || !jobDesc) {
+      errorBox.textContent = '⚠️ 職種名と仕事内容は必須です。';
+      errorBox.className = 'error-box show';
+      return;
+    }
+
+    const salaryMin = document.getElementById('salaryMin').value;
+    const salaryMax = document.getElementById('salaryMax').value;
+    const salary = salaryMin && salaryMax ? `${salaryMin}〜${salaryMax}万円` : salaryMin ? `${salaryMin}万円〜` : '応相談';
+
+    const prompt = `${platformPrompts[selectedPlatform]}
+
+【入力情報】
+職種名：${jobTitle}
+雇用形態：${document.getElementById('employmentType').value}
+給与：${salary}
+勤務地：${document.getElementById('location').value || '応相談'}
+リモート：${document.getElementById('remote').value}
+仕事内容：${jobDesc}
+必須スキル：${document.getElementById('mustSkills').value || 'なし'}
+歓迎スキル：${document.getElementById('niceSkills').value || 'なし'}
+会社名：${document.getElementById('company').value || '（社名非公開）'}
+業種：${document.getElementById('industry').value || '未記載'}
+会社の特徴・魅力：${document.getElementById('companyPR').value || '未記載'}
+福利厚生：${document.getElementById('benefits').value || '未記載'}
+
+上記の情報をもとに、求職者の心に響く完成度の高い求人票を作成してください。情報が少ない項目は一般的な内容で補完してください。`;
+
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('loading').className = 'loading show';
+    document.getElementById('resultSection').className = 'result-section';
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || `エラー (${res.status})`);
+
+      lastResult = data.content[0].text;
+      document.getElementById('resultBox').textContent = lastResult;
+      document.getElementById('platformTag').textContent = platformNames[selectedPlatform];
+      document.getElementById('resultSection').className = 'result-section show';
+
+    } catch (err) {
+      errorBox.textContent = '⚠️ ' + err.message;
+      errorBox.className = 'error-box show';
+    } finally {
+      document.getElementById('generateBtn').disabled = false;
+      document.getElementById('loading').className = 'loading';
+    }
+  }
+
+  function copyText() {
+    navigator.clipboard.writeText(lastResult).then(() => alert('コピーしました！'));
+  }
+
+  function downloadText() {
+    const blob = new Blob([lastResult], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `求人票_${document.getElementById('jobTitle').value || '未設定'}.txt`;
+    a.click();
+  }
+
+  function regenerate() {
+    document.getElementById('resultSection').className = 'result-section';
+    generate();
+  }
+</script>
+</body>
+</html>
